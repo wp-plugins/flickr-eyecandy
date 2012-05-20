@@ -4,7 +4,7 @@ Donate link: http://cheeso.members.winisp.net/FlickrWidgetDonate.aspx
 Tags: Flickr, photo, widget, Yahoo
 Requires at least: 3.2
 Tested up to: 3.2
-Stable tag: trunk
+Stable tag: 2012.05.19
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.txt
 
