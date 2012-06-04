@@ -4,7 +4,7 @@ Donate link: http://cheeso.members.winisp.net/FlickrWidgetDonate.aspx
 Tags: Flickr, photo, widget, Yahoo
 Requires at least: 3.2
 Tested up to: 3.2
-Stable tag: 2012.05.19
+Stable tag: 2012.06.03
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.txt
 
@@ -12,9 +12,11 @@ License URI: http://www.gnu.org/licenses/gpl-3.0.txt
 
 flickr_eyecandy is a very simple Wordpress Plugin.
 
-It provides a Wordpress Widget that displays a random photo from Flickr
-in the sidebar. The plugin uses the Flickr API, and authenticates via
+It provides a Wordpress Widget that selects and displays one random photo from Flickr
+in the sidebar, each time the page loads. The plugin uses the Flickr API, and authenticates via
 an API key that YOU (the installer) acquire via the Yahoo API Console.
+
+It does not present a gallery.  It's just one photo. The photo changes when you reload the page, but it does not change while the page is being displayed.
 
 You specify a tag or set of tags to filter the photos.
 For example, if you specify "usa,flag", you will get only photos tagged
@@ -44,13 +46,21 @@ with "usa" and "flag".
 
     - a pipe-separated list of the above. For example, if you specify
       "fish|leaf|blue,water", then you will get a photo that is tagged
-      with either "fish" or "leaf" or "blue and water".
+      with either "fish" or "leaf" or "blue and water". The plugin randomly
+      selects which term to use for a Flickr search, and then randomly
+      selects one of the returned photos for display.
 
 
 That's it !
 
 
 == Frequently Asked Questions ==
+
+= Will this plugin cycle through photos, like a slideshow? =
+
+No.  It grabs a list of photos from Flickr, based on search terms you provide, and then selects one of those photos on the rendered page. It does not cycle through photos.
+
+If you refresh the page, it will randomly select a photo again. It will probably be a different photo, but not always.
 
 = Where do I get an API Key? =
 
@@ -84,23 +94,36 @@ right price. ;)
 No, I haven't built that capability into this simple plugin, just yet.
 Let me know if you have strong requirements in this area.
 
+= Does the plugin use caching? =
+
+Yes, the plugin will cache results for each search term. The responses from Flickr can be 15-20k. The response won't change from one page view to the next, so caching makes sense.
+
+The search response cache is keyed on the search term. If your picture term is "pizza|beer", there will be two distinct cache files maintained.
+
+You can configure the lifetime of items in the cache, via the configuration panels in the wordpress backend.
+
 
 == Screenshots ==
 
 1. This shows the rendering of the Widget in the sidebar of a WP blog.
-2. This shows how to Activate gplus in the Plugins menu in the WP Admin backend
-3. Configuring the settings for the gplus widget in the WP Admin backend.
+2. This shows how to Activate the plugin in the Plugins menu in the WP Admin backend
+3. Configuring the settings for the flickr_eyecandy widget in the WP Admin backend.
 
 
 == Changelog ==
+
+= 2012.06.03 =
+* implement caching of the search results
+* a fix for the readme.
 
 = 2012.5.18 =
 * initial release
 
 == Dependencies ==
 
-This plugin depends on and uses the published Flickr REST API.
-It also relies on and uses the Curl library within PHP.
+- This plugin depends on and uses the published Flickr REST API.
+- It also relies on and uses the Curl library within PHP.
+- It makes outbound http connections from the Wordpress/PHP server. Most hosters allow this, so it won't be a problem.
 
 
 == Thanks ==

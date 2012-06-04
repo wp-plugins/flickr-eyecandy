@@ -2,8 +2,8 @@
 /*
 Plugin Name: flickr_eyecandy
 Plugin URI: http://cheeso.members.winisp.net/wp/plugins/flickr-eyecandy/
-Description: A Flickr random photo widget for your blog. You specify the photo tag id and the API Key, it does the rest.
-Version: 2012.5.19
+Description: A Flickr random photo widget for your blog. You specify the photo tag id and the API Key, it selects one photo from Flickr with that tag, and displays it on your sidebar. Eye candy!
+Version: 2012.06.03
 Author: Dino Chiesa
 Author URI: http://dinochiesa.net
 Donate URI: http://cheeso.members.winisp.net/FlickrWidgetDonate.aspx
@@ -53,8 +53,33 @@ if ( !function_exists('wpcom_time_since') ) {
 
 
 class FlickrGet {
+
     static $baseFlickrAddr = "http://api.flickr.com/services/rest/";
     // get API Key at http://www.flickr.com/services/apps/create/noncommercial/
+
+    static function getCacheDir() {
+        $temp = WP_CONTENT_DIR . '/flickr_eyecandy-cache/';
+
+        if ( file_exists( $temp )) {
+            if (@is_dir( $temp )) {
+                return $temp;
+            }
+            else {
+                return null;
+            }
+        }
+
+        if ( @mkdir( $temp ) ) {
+            $stat = @stat( dirname( $temp ) );
+            $dir_perms = $stat['mode'] & 0007777;
+            @chmod( $temp, $dir_perms );
+            return $temp;
+        }
+
+        return null;
+    }
+
+
 
     static function httpget($query) {
         $ch = curl_init();
@@ -67,15 +92,36 @@ class FlickrGet {
         return $data;
     }
 
-    public static function search($term, $key) {
+    public static function search($term, $key, $cache_life) {
         if (empty($term)) {
             echo "no search term.<br/>\n";
             return null;
         }
+
+        $f = preg_replace("/,/", "%2C", $term);
+        //$f = preg_replace("/-/", "%2D", $f);
+        $cacheFile = self::getCacheDir() . 'dpc-' . $f . ".xml";
+
+        if (file_exists($cacheFile)) {
+            if (filemtime($cacheFile) > (time() - 60 * $cache_life)) {
+                // The cache file is fresh.
+                $fresh = file_get_contents($cacheFile);
+                $photoList = simplexml_load_string($fresh);
+                return $photoList->photos;
+            }
+            else {
+                unlink($cacheFile);
+            }
+        }
+
+
         // use tag_mode=bool and exclude photos with some tags
         $query = 'api_key=' . $key .
             '&method=flickr.photos.search&format=rest&tag_mode=bool&tags=-fuck,-bitches,' . $term;
         $xmlString = self::httpget($query);
+
+        file_put_contents($cacheFile, $xmlString, LOCK_EX);
+
         $photoList = simplexml_load_string($xmlString);
         return $photoList->photos;
     }
@@ -84,7 +130,7 @@ class FlickrGet {
 
 
 class FlickrEyeCandyWidget extends WP_Widget {
-        /** constructor */
+    /** constructor */
     function FlickrEyeCandyWidget() {
         $opts = array('classname' => 'widg-flickr-eye-candy',
                       'description' => __( 'Display random photos from Flickr') );
@@ -107,16 +153,19 @@ class FlickrEyeCandyWidget extends WP_Widget {
         if ( $title ) {
             echo $before_title . $title . $after_title;
         }
-        $this->pickaFlickrPhoto($instance['tag'], $instance['api_key']);
+        $this->pickaFlickrPhoto($instance['tag'], $instance['api_key'],
+                                $instance['cache_life']);
         echo $after_widget;
     }
 
-    function pickaFlickrPhoto($tag_text, $api_key) {
+    function pickaFlickrPhoto($tag_text, $api_key, $cache_life) {
         $tags = explode('|', $tag_text); // choices separated by |
+        // select one tag or set of tags at random.
         $tag = $tags[rand(0, count($tags)-1)];
-        // echo "--choose " . $tag . "--<br/>";
-        $photos = FlickrGet::search($tag, $api_key);
+        // get a bunch of photos
+        $photos = FlickrGet::search($tag, $api_key, $cache_life);
         if (isset($photos)) {
+            // select one random photo of those returned
             $n = rand(0, count($photos->photo));
             $p = $photos->photo[$n];
             $attrs = $p->attributes();
@@ -137,6 +186,7 @@ class FlickrEyeCandyWidget extends WP_Widget {
         $instance['title'] = strip_tags($new_instance['title']);
         $instance['tag'] = strip_tags($new_instance['tag']);
         $instance['api_key'] = strip_tags($new_instance['api_key']);
+        $instance['cache_life'] = intval($new_instance['cache_life'],10);
         return $instance;
     }
 
@@ -154,15 +204,18 @@ class FlickrEyeCandyWidget extends WP_Widget {
         $title = 'Flickr Eye Candy';
         $tag = '';
         $api_key = '';
+        $cache_life = 10;
 
         if ($instance) {
             $title = esc_attr($instance['title']);
             $tag = esc_attr($instance['tag']);
             $api_key = esc_attr($instance['api_key']);
+            $cache_life = intval($instance['cache_life'],10);
         }
         else {
             $defaults = array('title' => $title,
                               'api_key' => '',
+                              'cache_life' => 10,
                               'tag' => 'leaf');
             $instance = wp_parse_args( (array) $instance, $defaults );
         }
@@ -170,6 +223,7 @@ class FlickrEyeCandyWidget extends WP_Widget {
         $this->widget_FormTextBox('title', 'Title:', 'The title to display for the widget', $title);
         $this->widget_FormTextBox('tag', 'photo tag:', 'display only photos from Flickr with this tag', $tag);
         $this->widget_FormTextBox('api_key', 'Yahoo API Key:', 'Get this from http://www.flickr.com/services/apps/create/apply/', $api_key);
+        $this->widget_FormTextBox('cache_life', 'Cache Lifetime:', 'The plugin will cache results for this many minutes.', $cache_life);
     }
 }
 
