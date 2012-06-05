@@ -3,7 +3,7 @@
 Plugin Name: flickr_eyecandy
 Plugin URI: http://cheeso.members.winisp.net/wp/plugins/flickr-eyecandy/
 Description: A Flickr random photo widget for your blog. You specify the photo tag id and the API Key, it selects one photo from Flickr with that tag, and displays it on your sidebar. Eye candy!
-Version: 2012.06.03
+Version: 2012.06.04
 Author: Dino Chiesa
 Author URI: http://dinochiesa.net
 Donate URI: http://cheeso.members.winisp.net/FlickrWidgetDonate.aspx
@@ -225,6 +225,31 @@ class FlickrEyeCandyWidget extends WP_Widget {
         $this->widget_FormTextBox('api_key', 'Yahoo API Key:', 'Get this from http://www.flickr.com/services/apps/create/apply/', $api_key);
         $this->widget_FormTextBox('cache_life', 'Cache Lifetime:', 'The plugin will cache results for this many minutes.', $cache_life);
     }
+}
+
+
+
+if ( !function_exists('dpc_emit_paypal_donation_button') ) {
+    function dpc_emit_paypal_donation_button($widget, $clazzName, $buttonCode) {
+        if (!is_object($widget)) {
+            echo "Not object<br/>\n";
+            return;
+        }
+        $clz = get_class($widget);
+        if ($clz == $clazzName) {
+            echo
+                "<a target='_blank' " .
+                "href='https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=" .
+                $buttonCode . "'>" .
+                "<img src='https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif' border='0' alt='donate via PayPal'>" .
+                "</a>\n" ;
+        }
+    }
+}
+
+add_action( 'in_widget_form', 'flickr_eyecandy_appendDonation' );
+function flickr_eyecandy_appendDonation($widget, $arg2=null, $arg3=null) {
+    dpc_emit_paypal_donation_button($widget, 'FlickrEyeCandyWidget', 'EHPN58TQ2D57W');
 }
 
 

@@ -4,7 +4,7 @@ Donate link: http://cheeso.members.winisp.net/FlickrWidgetDonate.aspx
 Tags: Flickr, photo, widget, Yahoo
 Requires at least: 3.2
 Tested up to: 3.2
-Stable tag: 2012.06.03
+Stable tag: 2012.06.04
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.txt
 
@@ -111,6 +111,9 @@ You can configure the lifetime of items in the cache, via the configuration pane
 
 
 == Changelog ==
+
+= 2012.06.04 =
+* clean up some small things in the admin form
 
 = 2012.06.03 =
 * implement caching of the search results
