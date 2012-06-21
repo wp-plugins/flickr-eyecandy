@@ -133,5 +133,11 @@ You can configure the lifetime of items in the cache, via the configuration pane
 
 Thanks for your interest!
 
+You can make a donation at http://cheeso.members.winisp.net/FlickrWidgetDonate.aspx
+
+Check out all my plugins:
+http://wordpress.org/extend/plugins/search.php?q=dpchiesa
+
+
 -Dino Chiesa
 
