@@ -3,7 +3,7 @@
 Plugin Name: flickr_eyecandy
 Plugin URI: http://cheeso.members.winisp.net/wp/plugins/flickr-eyecandy/
 Description: A Flickr random photo widget for your blog. You specify the photo tag id and the API Key, it selects one photo from Flickr with that tag, and displays it on your sidebar. Eye candy!
-Version: 2012.06.04
+Version: 2012.06.20
 Author: Dino Chiesa
 Author URI: http://dinochiesa.net
 Donate URI: http://cheeso.members.winisp.net/FlickrWidgetDonate.aspx
@@ -190,14 +190,15 @@ class FlickrEyeCandyWidget extends WP_Widget {
         return $instance;
     }
 
-    function widget_FormTextBox($fieldId, $label, $hint, $value) {
+    function formTextBox($fieldId, $label, $hint, $value) {
         echo "  <p>\n" .
             "      <label for='" . $this->get_field_id($fieldId) . "'>" . _e($label) .
             "</label>\n" .
             "      <input class='widefat' id='" . $this->get_field_id($fieldId) .
             "' name='" . $this->get_field_name($fieldId) .
-            "' title='" .  _e($hint) .
-            "' type='text' value='" .  $value ."'/>\n  </p>\n" ;
+            "' type='text' value='" .  $value ."'/>\n " .
+            "<em>" . __($hint) . "</em>\n" .
+            "  </p>\n" ;
     }
 
     function form($instance) {
@@ -219,11 +220,19 @@ class FlickrEyeCandyWidget extends WP_Widget {
                               'tag' => 'leaf');
             $instance = wp_parse_args( (array) $instance, $defaults );
         }
+        $tagHelp = 'Display only photos from Flickr with this tag. ' .
+            'You use commas to separate individual tags.  ' .
+            'For example, using "red,stripe" here will select a photo tagged ' .
+            'with both "red" AND "stripe". You can specify ' .
+            'alternation with a vertical bar.  For example, using ' .
+            '"blue,ocean|turtle" here will select a photo tagged ' .
+            'with "blue" and "ocean", or a photo tagged with "turtle".' ;
 
-        $this->widget_FormTextBox('title', 'Title:', 'The title to display for the widget', $title);
-        $this->widget_FormTextBox('tag', 'photo tag:', 'display only photos from Flickr with this tag', $tag);
-        $this->widget_FormTextBox('api_key', 'Yahoo API Key:', 'Get this from http://www.flickr.com/services/apps/create/apply/', $api_key);
-        $this->widget_FormTextBox('cache_life', 'Cache Lifetime:', 'The plugin will cache results for this many minutes.', $cache_life);
+        $this->formTextBox('title', 'Title:', 'The title to display for the widget', $title);
+        $this->formTextBox('tag', 'Tag(s):', $tagHelp, $tag);
+
+        $this->formTextBox('api_key', 'Yahoo API Key:', '(<a href="http://www.flickr.com/services/apps/create/apply/">Register</a>)', $api_key);
+        $this->formTextBox('cache_life', 'Cache Lifetime:', 'The plugin will cache results for this many minutes.', $cache_life);
     }
 }
 
