@@ -2,14 +2,31 @@
 /*
 Plugin Name: flickr_eyecandy
 Plugin URI: http://cheeso.members.winisp.net/wp/plugins/flickr-eyecandy/
-Description: A Flickr random photo widget for your blog. You specify the photo tag id and the API Key, it selects one photo from Flickr with that tag, and displays it on your sidebar. Eye candy!
-Version: 2012.06.20
+Description: A Flickr photo widget for your blog. Specify the photo tag id and the API Key, it randomly selects one photo from Flickr with that tag, and displays it on your sidebar. Eye candy!
+Version: 2012.07.19
 Author: Dino Chiesa
 Author URI: http://dinochiesa.net
 Donate URI: http://cheeso.members.winisp.net/FlickrWidgetDonate.aspx
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.txt
 */
+
+// prevent direct access
+if ( !function_exists('flickr_eyecandy_safeRedirect') ) {
+    function flickr_eyecandy_safeRedirect($location, $replace = 1, $Int_HRC = NULL) {
+        if(!headers_sent()) {
+            header('location: ' . urldecode($location), $replace, $Int_HRC);
+            exit;
+        }
+        exit('<meta http-equiv="refresh" content="4; url=' .
+             urldecode($location) . '"/>');
+        return;
+    }
+}
+if(!defined('WPINC')){
+    flickr_eyecandy_safeRedirect("http://" . $_SERVER["HTTP_HOST"]);
+}
+
 
 if ( !function_exists('wpcom_time_since') ) {
     /* function taken from WordPress.com */
@@ -165,15 +182,28 @@ class FlickrEyeCandyWidget extends WP_Widget {
         // get a bunch of photos
         $photos = FlickrGet::search($tag, $api_key, $cache_life);
         if (isset($photos)) {
-            // select one random photo of those returned
-            $n = rand(0, count($photos->photo));
-            $p = $photos->photo[$n];
-            $attrs = $p->attributes();
-            printf("<div><a target='_blank' href='http://www.flickr.com/photos/%s/%s' " .
-                   " title='%s - click to view on Flickr'>" .
-                   "<img src='http://farm%d.staticflickr.com/%d/%s_%s_n.jpg'/></a></div>",
-                   $attrs->owner, $attrs->id, $attrs->title,
-                   $attrs->farm, $attrs->server, $attrs->id, $attrs->secret);
+          $done = false;
+          $cycles = 0;
+          while(!$done) {
+            $cycles++;
+            try {
+              // select one random photo of those returned
+              $n = rand(0, count($photos->photo));
+              $p = $photos->photo[$n];
+              $attrs = $p->attributes();
+              printf("<div><a target='_blank' href='http://www.flickr.com/photos/%s/%s' " .
+                     " title='%s - click to view on Flickr'>" .
+                     "<img src='http://farm%d.staticflickr.com/%d/%s_%s_n.jpg'/></a></div>",
+                     $attrs->owner, $attrs->id, $attrs->title,
+                     $attrs->farm, $attrs->server, $attrs->id, $attrs->secret);
+              $done = true;
+            }
+            catch (Exception $e) {
+              // gulp!
+              printf("<!-- Exception: %s -->", $e);
+            }
+          }
+          printf("<!-- required cycles: %d -->", $cycles);
         }
         else {
             echo "--no photo--<br/>";
