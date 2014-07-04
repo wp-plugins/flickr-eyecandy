@@ -3,8 +3,8 @@ Contributors: dpchiesa
 Donate link: http://dinochiesa.github.io/FlickrWidgetDonate.html
 Tags: Flickr, photo, widget, Yahoo
 Requires at least: 3.2
-Tested up to: 3.2
-Stable tag: 2014.07.03
+Tested up to: 3.9.1
+Stable tag: 2014.07.04
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.txt
 
@@ -111,6 +111,11 @@ You can configure the lifetime of items in the cache, via the configuration pane
 
 
 == Changelog ==
+
+= 2014.07.04 =
+* no code changes from 2014.07.03
+* updated "tested with" to 3.9.1
+* updated brief description. 
 
 = 2014.07.03 =
 * update to use https with flickr's API - this is apparently now required. 

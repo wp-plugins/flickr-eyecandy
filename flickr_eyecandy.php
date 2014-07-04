@@ -2,8 +2,8 @@
 /*
 Plugin Name: flickr_eyecandy
 Plugin URI: http://wordpress.org/plugins/flickr-eyecandy/
-Description: A Flickr photo widget for your blog. Specify the photo tag id and the API Key, it randomly selects one photo from Flickr with that tag, and displays it on your sidebar. Eye candy!
-Version: 2014.07.03
+Description: A Flickr photo widget for your blog. Specify the photo tag id and the API Key, it randomly displays one photo from Flickr with that tag. Eye candy!
+Version: 2014.07.04
 Author: Dino Chiesa
 Author URI: http://www.dinochiesa.net
 Donate URI: http://dinochiesa.github.io/FlickrWidgetDonate.html
