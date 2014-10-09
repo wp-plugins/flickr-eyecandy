@@ -1,10 +1,10 @@
 === FlickrEyeCandy ===
 Contributors: dpchiesa
-Donate link: http://cheeso.members.winisp.net/FlickrWidgetDonate.aspx
+Donate link: http://dinochiesa.github.io/FlickrWidgetDonate.html
 Tags: Flickr, photo, widget, Yahoo
 Requires at least: 3.2
-Tested up to: 3.2
-Stable tag: 2012.07.19
+Tested up to: 3.9.1
+Stable tag: 2014.07.04
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.txt
 
@@ -112,6 +112,15 @@ You can configure the lifetime of items in the cache, via the configuration pane
 
 == Changelog ==
 
+= 2014.07.04 =
+* no code changes from 2014.07.03
+* updated "tested with" to 3.9.1
+* updated brief description. 
+
+= 2014.07.03 =
+* update to use https with flickr's API - this is apparently now required. 
+* tested and works with Wordpress v3.9.1
+
 = 2012.07.18 =
 * catch exceptions on unexpected missing attributes on a photo.
 
@@ -136,7 +145,7 @@ You can configure the lifetime of items in the cache, via the configuration pane
 
 Thanks for your interest!
 
-You can make a donation at http://cheeso.members.winisp.net/FlickrWidgetDonate.aspx
+You can make a donation at http://dinochiesa.github.io/FlickrWidgetDonate.html
 
 Check out all my plugins:
 http://wordpress.org/extend/plugins/search.php?q=dpchiesa

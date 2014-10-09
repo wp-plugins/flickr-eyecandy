@@ -1,12 +1,12 @@
 <?php
 /*
 Plugin Name: flickr_eyecandy
-Plugin URI: http://cheeso.members.winisp.net/wp/plugins/flickr-eyecandy/
-Description: A Flickr photo widget for your blog. Specify the photo tag id and the API Key, it randomly selects one photo from Flickr with that tag, and displays it on your sidebar. Eye candy!
-Version: 2012.07.19
+Plugin URI: http://wordpress.org/plugins/flickr-eyecandy/
+Description: A Flickr photo widget for your blog. Specify the photo tag id and the API Key, it randomly displays one photo from Flickr with that tag. Eye candy!
+Version: 2014.10.08
 Author: Dino Chiesa
-Author URI: http://dinochiesa.net
-Donate URI: http://cheeso.members.winisp.net/FlickrWidgetDonate.aspx
+Author URI: http://www.dinochiesa.net
+Donate URI: http://dinochiesa.github.io/FlickrWidgetDonate.html
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.txt
 */
@@ -71,11 +71,11 @@ if ( !function_exists('wpcom_time_since') ) {
 
 class FlickrGet {
 
-    static $baseFlickrAddr = "http://api.flickr.com/services/rest/";
+    static $baseFlickrAddr = "https://api.flickr.com/services/rest/";
     // get API Key at http://www.flickr.com/services/apps/create/noncommercial/
 
     static function getCacheDir() {
-        $temp = WP_CONTENT_DIR . '/flickr_eyecandy-cache/';
+        $temp = WP_CONTENT_DIR . '/cache/';
 
         if ( file_exists( $temp )) {
             if (@is_dir( $temp )) {
@@ -96,14 +96,16 @@ class FlickrGet {
         return null;
     }
 
-
-
     static function httpget($query) {
         $ch = curl_init();
-        $timeout = 5;
+        $timeout = 8;
+        $pathToCacert = WP_CONTENT_DIR . '/plugins/flickr-eyecandy/cacert.pem';
         curl_setopt($ch, CURLOPT_URL, self::$baseFlickrAddr . '?' . $query);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+        curl_setopt($ch, CURLOPT_CAINFO, $pathToCacert);
         $data = curl_exec($ch);
         curl_close($ch);
         return $data;
@@ -117,12 +119,12 @@ class FlickrGet {
 
         $f = preg_replace("/,/", "%2C", $term);
         //$f = preg_replace("/-/", "%2D", $f);
-        $cacheFile = self::getCacheDir() . 'dpc-' . $f . ".xml";
+        $cacheFile = self::getCacheDir() . 'flickr-eyecandy-' . $f . ".xml";
 
         if (file_exists($cacheFile)) {
             if (filemtime($cacheFile) > (time() - 60 * $cache_life)) {
                 // The cache file is fresh.
-                $fresh = file_get_contents($cacheFile);
+                $fresh = trim(file_get_contents($cacheFile));
                 $photoList = simplexml_load_string($fresh);
                 return $photoList->photos;
             }
@@ -131,16 +133,21 @@ class FlickrGet {
             }
         }
 
-
         // use tag_mode=bool and exclude photos with some tags
         $query = 'api_key=' . $key .
             '&method=flickr.photos.search&format=rest&tag_mode=bool&tags=-fuck,-bitches,' . $term;
-        $xmlString = self::httpget($query);
+        $xmlString = trim(self::httpget($query));
 
-        file_put_contents($cacheFile, $xmlString, LOCK_EX);
-
-        $photoList = simplexml_load_string($xmlString);
-        return $photoList->photos;
+        try {
+          $photoList = simplexml_load_string($xmlString);
+          file_put_contents($cacheFile, $xmlString, LOCK_EX);
+          return $photoList->photos;
+        }
+        catch (Exception $e) {
+          // gulp!
+          printf("<!-- Exception: %s -->", $e);
+          return null;
+        }
     }
 }
 
@@ -176,38 +183,62 @@ class FlickrEyeCandyWidget extends WP_Widget {
     }
 
     function pickaFlickrPhoto($tag_text, $api_key, $cache_life) {
-        $tags = explode('|', $tag_text); // choices separated by |
-        // select one tag or set of tags at random.
+      $tags = explode('|', $tag_text); // choices separated by |
+      $request_cycles = 0;
+      $done = false;
+      // Sometimes the cache is corrupt, or Flickr returns zero photos?
+      // Maybe because of a overconstrained tag selection?  I don't
+      // know. Anyway, this has a built-in retry to handle that case.
+      while(!$done && $request_cycles < 6) {
+        // select one tag or a set of tags at random.
         $tag = $tags[rand(0, count($tags)-1)];
-        // get a bunch of photos
-        $photos = FlickrGet::search($tag, $api_key, $cache_life);
-        if (isset($photos)) {
-          $done = false;
-          $cycles = 0;
-          while(!$done) {
-            $cycles++;
-            try {
-              // select one random photo of those returned
-              $n = rand(0, count($photos->photo));
-              $p = $photos->photo[$n];
-              $attrs = $p->attributes();
-              printf("<div><a target='_blank' href='http://www.flickr.com/photos/%s/%s' " .
-                     " title='%s - click to view on Flickr'>" .
-                     "<img src='http://farm%d.staticflickr.com/%d/%s_%s_n.jpg'/></a></div>",
-                     $attrs->owner, $attrs->id, $attrs->title,
-                     $attrs->farm, $attrs->server, $attrs->id, $attrs->secret);
-              $done = true;
+        // get a bunch of photos with that tag / those tags
+        $photos = FlickrGet::search($tag, $api_key, $request_cycles);
+        if ($photos) {
+          $c = count($photos->photo);
+          printf("<!-- count of photos: %d -->", $c);
+          if ($c>0) {
+            $done = false;
+            $scan_cycles = 0;
+            while(!$done && $scan_cycles < 10) {
+              $scan_cycles++;
+              try {
+                // select one random photo of those returned
+                $n = rand(0, $c);
+                $p = $photos->photo[$n];
+                if ($p) {
+                  // sometimes the selected item is not a photo...
+                  $attrs = $p->attributes();
+                  printf("<div><a target='_blank' href='http://www.flickr.com/photos/%s/%s' " .
+                         " title='%s - click to view on Flickr'>" .
+                         "<img src='http://farm%d.staticflickr.com/%d/%s_%s_n.jpg'/></a></div>",
+                         $attrs->owner, $attrs->id, $attrs->title,
+                         $attrs->farm, $attrs->server, $attrs->id, $attrs->secret);
+                  $done = true;
+                }
+              }
+              catch (Exception $e) {
+                // gulp!
+                printf("<!-- Exception: %s -->", $e);
+              }
             }
-            catch (Exception $e) {
-              // gulp!
-              printf("<!-- Exception: %s -->", $e);
-            }
+            printf("<!-- required scan cycles: %d -->", $scan_cycles);
           }
-          printf("<!-- required cycles: %d -->", $cycles);
         }
         else {
-            echo "--no photo--<br/>";
+          // to a log file?
+          //echo "--no photo available--<br/>";
         }
+        $request_cycles++;
+        if ($request_cycles > 2) {
+          // After 3 tries, disable cache, and try some more.
+          $cache_life = 0;
+          // Not sure how well this will scale.
+        }
+      }
+      if (!done) {
+          echo "--no photo available--<br/>";
+      }
     }
 
     /** @see WP_Widget::update */
@@ -265,7 +296,6 @@ class FlickrEyeCandyWidget extends WP_Widget {
         $this->formTextBox('cache_life', 'Cache Lifetime:', 'The plugin will cache results for this many minutes.', $cache_life);
     }
 }
-
 
 
 if ( !function_exists('dpc_emit_paypal_donation_button') ) {
