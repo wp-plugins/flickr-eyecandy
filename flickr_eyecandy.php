@@ -3,7 +3,7 @@
 Plugin Name: flickr_eyecandy
 Plugin URI: http://wordpress.org/plugins/flickr-eyecandy/
 Description: A Flickr photo widget for your blog. Specify the photo tag id and the API Key, it randomly displays one photo from Flickr with that tag. Eye candy!
-Version: 2014.07.04
+Version: 2014.10.08
 Author: Dino Chiesa
 Author URI: http://www.dinochiesa.net
 Donate URI: http://dinochiesa.github.io/FlickrWidgetDonate.html
@@ -124,7 +124,7 @@ class FlickrGet {
         if (file_exists($cacheFile)) {
             if (filemtime($cacheFile) > (time() - 60 * $cache_life)) {
                 // The cache file is fresh.
-                $fresh = file_get_contents($cacheFile);
+                $fresh = trim(file_get_contents($cacheFile));
                 $photoList = simplexml_load_string($fresh);
                 return $photoList->photos;
             }
@@ -136,12 +136,18 @@ class FlickrGet {
         // use tag_mode=bool and exclude photos with some tags
         $query = 'api_key=' . $key .
             '&method=flickr.photos.search&format=rest&tag_mode=bool&tags=-fuck,-bitches,' . $term;
-        $xmlString = self::httpget($query);
+        $xmlString = trim(self::httpget($query));
 
-        file_put_contents($cacheFile, $xmlString, LOCK_EX);
-
-        $photoList = simplexml_load_string($xmlString);
-        return $photoList->photos;
+        try {
+          $photoList = simplexml_load_string($xmlString);
+          file_put_contents($cacheFile, $xmlString, LOCK_EX);
+          return $photoList->photos;
+        }
+        catch (Exception $e) {
+          // gulp!
+          printf("<!-- Exception: %s -->", $e);
+          return null;
+        }
     }
 }
 
