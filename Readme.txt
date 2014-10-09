@@ -4,7 +4,7 @@ Donate link: http://dinochiesa.github.io/FlickrWidgetDonate.html
 Tags: Flickr, photo, widget, Yahoo
 Requires at least: 3.2
 Tested up to: 3.9.1
-Stable tag: 2014.07.04
+Stable tag: 2014.10.10
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.txt
 
